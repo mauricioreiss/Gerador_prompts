@@ -1,21 +1,21 @@
 import os
 import json
-from openai import OpenAI
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Cliente inicializado de forma lazy
+# Cliente ASYNC inicializado de forma lazy
 _client = None
 
 
-def get_client() -> OpenAI:
+def get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY não configurada no arquivo .env")
-        _client = OpenAI(api_key=api_key)
+        _client = AsyncOpenAI(api_key=api_key, timeout=30.0)
     return _client
 
 
@@ -82,8 +82,8 @@ async def preprocess_briefing(dados: dict) -> dict:
         "opcoes_transbordo_imediato": dados.get("opcoes_transbordo_imediato", ""),
     }
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": PREPROCESSOR_PROMPT},
             {
@@ -148,8 +148,8 @@ async def refine_prompt(prompt_atual: str, instrucao: str) -> str:
     """
     client = get_client()
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {
