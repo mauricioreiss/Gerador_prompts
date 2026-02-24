@@ -1,10 +1,8 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from pathlib import Path
-from datetime import datetime
-import json
 
 from schemas import PromptRequest, PromptResponse, RefineRequest, RefineResponse, GoogleFormWebhook
 from ai_service import refine_prompt, preprocess_briefing
@@ -31,29 +29,6 @@ index_path = Path(__file__).parent.parent / "index.html"
 templates_dir = Path(__file__).parent / "templates"
 jinja_env = Environment(loader=FileSystemLoader(templates_dir), trim_blocks=True, lstrip_blocks=True)
 
-# Pasta para salvar prompts gerados
-prompts_dir = Path(__file__).parent / "prompts_gerados"
-prompts_dir.mkdir(exist_ok=True)
-
-
-def save_prompt_to_file(nome_empresa: str, prompt: str, dados_originais: dict):
-    """Salva o prompt gerado em um arquivo .md"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{timestamp}_{nome_empresa.replace(' ', '_')}.md"
-    filepath = prompts_dir / filename
-
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(f"<!-- Gerado em: {datetime.now().isoformat()} -->\n")
-        f.write(f"<!-- Cliente: {nome_empresa} -->\n\n")
-        f.write(prompt)
-
-    # Salva também os dados originais em JSON
-    json_filepath = prompts_dir / f"{timestamp}_{nome_empresa.replace(' ', '_')}_dados.json"
-    with open(json_filepath, "w", encoding="utf-8") as f:
-        json.dump(dados_originais, f, ensure_ascii=False, indent=2)
-
-    return filepath
-
 
 @app.get("/")
 async def root():
@@ -64,7 +39,7 @@ async def root():
 
 
 @app.post("/generate", response_model=PromptResponse)
-async def generate_prompt(request: PromptRequest, background_tasks: BackgroundTasks):
+async def generate_prompt(request: PromptRequest):
     """
     Gera um prompt completo baseado nos dados fornecidos.
     Usa IA para pré-processar e interpretar o briefing (Anti-Papagaio).
@@ -85,19 +60,11 @@ async def generate_prompt(request: PromptRequest, background_tasks: BackgroundTa
     # Renderizar o template com os dados processados
     prompt = template.render(**dados_processados)
 
-    # Salvar em background
-    background_tasks.add_task(
-        save_prompt_to_file,
-        request.nome_empresa,
-        prompt,
-        dados_processados
-    )
-
     return PromptResponse(prompt=prompt)
 
 
 @app.post("/webhook/google-forms")
-async def webhook_google_forms(data: GoogleFormWebhook, background_tasks: BackgroundTasks):
+async def webhook_google_forms(data: GoogleFormWebhook):
     """
     Recebe dados do Google Forms via Apps Script e gera o prompt.
 
@@ -148,14 +115,6 @@ async def webhook_google_forms(data: GoogleFormWebhook, background_tasks: Backgr
     # Renderizar o template
     prompt = template.render(**prompt_data)
 
-    # Salvar em background
-    background_tasks.add_task(
-        save_prompt_to_file,
-        data.nome_empresa,
-        prompt,
-        prompt_data
-    )
-
     return {
         "success": True,
         "message": f"Prompt gerado para {data.nome_empresa}",
@@ -179,49 +138,6 @@ async def refine_prompt_endpoint(request: RefineRequest):
         return RefineResponse(prompt_refinado=prompt_refinado)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao refinar prompt: {str(e)}")
-
-
-@app.get("/prompts")
-async def list_prompts():
-    """Lista todos os prompts gerados."""
-    prompts = []
-    for file in sorted(prompts_dir.glob("*.md"), reverse=True):
-        prompts.append({
-            "filename": file.name,
-            "created_at": file.stat().st_mtime,
-            "size": file.stat().st_size
-        })
-    return {"prompts": prompts[:50]}  # Últimos 50
-
-
-@app.get("/prompts/{filename}")
-async def get_prompt(filename: str):
-    """Retorna um prompt específico."""
-    filepath = prompts_dir / filename
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail="Prompt não encontrado")
-
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    return {"filename": filename, "content": content}
-
-
-@app.put("/prompts/{filename}")
-async def update_prompt(filename: str, data: dict):
-    """Atualiza um prompt existente."""
-    filepath = prompts_dir / filename
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail="Prompt não encontrado")
-
-    content = data.get("content", "")
-    if not content:
-        raise HTTPException(status_code=400, detail="Conteúdo não pode estar vazio")
-
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(content)
-
-    return {"success": True, "filename": filename}
 
 
 @app.get("/health")

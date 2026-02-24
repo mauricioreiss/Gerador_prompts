@@ -4,3 +4,13 @@
 # Python cache
 __pycache__/
 *.pyc
+
+# Environment variables
+.env
+backend/.env
+
+# Generated prompts
+backend/prompts_gerados/
+
+# Virtual environment
+venv/
