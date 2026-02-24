@@ -1,11 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from pathlib import Path
+import io
 
-from schemas import PromptRequest, PromptResponse, RefineRequest, RefineResponse, GoogleFormWebhook
-from ai_service import refine_prompt, preprocess_briefing
+from schemas import PromptRequest, PromptResponse, RefineRequest, RefineResponse, GoogleFormWebhook, LocadoraPromptRequest
+from ai_service import refine_prompt, preprocess_briefing, structure_catalog_from_text
 
 app = FastAPI(
     title="Gerador de Prompts para IA",
@@ -29,6 +30,12 @@ index_path = Path(__file__).parent.parent / "index.html"
 templates_dir = Path(__file__).parent / "templates"
 jinja_env = Environment(loader=FileSystemLoader(templates_dir), trim_blocks=True, lstrip_blocks=True)
 
+# Mapeamento de templates
+TEMPLATE_MAP = {
+    "atendente_geral": "base_atendente.jinja2",
+    "locadora_equipamentos": "locadora_equipamentos.jinja2",
+}
+
 
 @app.get("/")
 async def root():
@@ -39,28 +46,95 @@ async def root():
 
 
 @app.post("/generate", response_model=PromptResponse)
-async def generate_prompt(request: PromptRequest):
+async def generate_prompt(request: dict):
     """
     Gera um prompt completo baseado nos dados fornecidos.
-    Usa IA para pré-processar e interpretar o briefing (Anti-Papagaio).
+    Detecta o tipo de template e usa o schema correto.
     """
+    template_type = request.get("template_type", "atendente_geral")
+    template_name = TEMPLATE_MAP.get(template_type)
+
+    if not template_name:
+        raise HTTPException(status_code=400, detail="Tipo de template inválido")
+
     try:
-        template = jinja_env.get_template("base_atendente.jinja2")
+        template = jinja_env.get_template(template_name)
     except TemplateNotFound:
         raise HTTPException(status_code=500, detail="Template não encontrado")
 
-    # Pré-processar briefing com IA (interpreta campos vagos)
-    dados_originais = request.model_dump()
-    try:
-        dados_processados = await preprocess_briefing(dados_originais)
-    except Exception:
-        # Se IA falhar, usa dados originais
+    # Validar com o schema correto
+    if template_type == "locadora_equipamentos":
+        validated = LocadoraPromptRequest(**request)
+    else:
+        validated = PromptRequest(**request)
+
+    dados_originais = validated.model_dump()
+
+    # Pré-processar briefing com IA (apenas para atendente_geral)
+    if template_type == "atendente_geral":
+        try:
+            dados_processados = await preprocess_briefing(dados_originais)
+        except Exception:
+            dados_processados = dados_originais
+    else:
         dados_processados = dados_originais
 
     # Renderizar o template com os dados processados
     prompt = template.render(**dados_processados)
 
     return PromptResponse(prompt=prompt)
+
+
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    """
+    Recebe um PDF, extrai texto e usa IA para estruturar
+    o catálogo de equipamentos em categorias.
+    """
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos")
+
+    contents = await file.read()
+
+    if len(contents) > 4 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 4MB)")
+
+    # Import lazy para não impactar cold start
+    import pdfplumber
+
+    extracted_text = ""
+    try:
+        with pdfplumber.open(io.BytesIO(contents)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    extracted_text += page_text + "\n"
+
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        cleaned = [cell or "" for cell in row]
+                        extracted_text += " | ".join(cleaned) + "\n"
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar PDF: {str(e)}")
+
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Não foi possível extrair texto do PDF. Verifique se o PDF contém texto selecionável."
+        )
+
+    # Usar IA para estruturar o catálogo
+    try:
+        structured = await structure_catalog_from_text(extracted_text)
+    except Exception:
+        structured = {"categorias": []}
+
+    return {
+        "success": True,
+        "raw_text": extracted_text[:5000],
+        "categorias": structured.get("categorias", []),
+    }
 
 
 @app.post("/webhook/google-forms")

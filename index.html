@@ -10,6 +10,8 @@
         .tab-active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; }
         .modal.active { display: flex; }
+        .template-card { transition: all 0.2s; }
+        .template-card.selected { border-color: #3b82f6; background: #eff6ff; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -48,267 +50,400 @@ Ana
                 <button onclick="openPasteModal()" class="px-4 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">
                     <i class="fas fa-paste mr-2"></i>Colar Respostas
                 </button>
-                <button onclick="showTab('form')" id="btn-form" class="px-4 py-2 rounded-lg text-sm font-medium tab-active">
-                    <i class="fas fa-plus mr-2"></i>Novo Prompt
-                </button>
-                <button onclick="showTab('list')" id="btn-list" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
-                    <i class="fas fa-list mr-2"></i>Prompts Salvos
-                </button>
             </div>
         </div>
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 pb-8">
-        <!-- Tab: Formulário -->
-        <div id="tab-form">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Formulário -->
-                <div class="space-y-4">
-                    <form id="promptForm" class="space-y-4">
-                        <!-- Seção 1 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">1) Identidade</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Formulário -->
+            <div class="space-y-4">
+                <!-- Seletor de Template -->
+                <div class="bg-white p-5 rounded-lg shadow border-2 border-blue-200">
+                    <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">Tipo de Prompt</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="template-card selected border-2 rounded-lg p-4 text-center cursor-pointer" onclick="switchTemplate('atendente_geral')">
+                            <i class="fas fa-headset text-2xl mb-2 text-blue-600"></i>
+                            <div class="font-medium text-sm">Atendente Geral</div>
+                            <div class="text-xs text-gray-500 mt-1">Modelo padrão de atendimento</div>
+                        </div>
+                        <div class="template-card border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer" onclick="switchTemplate('locadora_equipamentos')">
+                            <i class="fas fa-truck text-2xl mb-2 text-orange-600"></i>
+                            <div class="font-medium text-sm">Locadora de Equipamentos</div>
+                            <div class="text-xs text-gray-500 mt-1">Direto/comercial</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== FORM: ATENDENTE GERAL ==================== -->
+                <form id="formAtendenteGeral" class="space-y-4">
+                    <input type="hidden" name="template_type" value="atendente_geral">
+
+                    <!-- Seção 1 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">1) Identidade</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Empresa</label>
+                                <input type="text" name="nome_empresa" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Atendente</label>
+                                <input type="text" name="nome_atendente" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tom de Voz</label>
+                                <input type="text" name="estilo_comunicacao" class="w-full px-3 py-2 border rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estilo de Mensagem</label>
+                                <input type="text" name="regras_comunicacao" class="w-full px-3 py-2 border rounded-md">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Papel da IA</label>
+                                <input type="text" name="papel_ia" class="w-full px-3 py-2 border rounded-md" value="atender clientes, tirar dúvidas e direcionar para o atendimento humano">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Limitações/Proibições</label>
+                                <textarea name="proibicoes_texto" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 2 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                            <h2 class="font-semibold text-gray-800">2) Menu Inicial</h2>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="possui_menu" checked class="w-4 h-4 rounded" onchange="document.getElementById('menuSection').classList.toggle('hidden', !this.checked)">
+                                Incluir menu
+                            </label>
+                        </div>
+                        <div id="menuSection">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem de Boas-vindas</label>
+                                <textarea name="mensagem_boas_vindas" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Opções do Menu</label>
+                                <textarea name="menu_opcoes" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Triagem Automática (ir direto para humano)</label>
+                                <input type="text" name="opcoes_transbordo_imediato" class="w-full px-3 py-2 border rounded-md">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 3 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">3) Contexto da Empresa</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contexto/Autoridade</label>
+                                <textarea name="frase_autoridade" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Lista de Serviços</label>
+                                <textarea name="servicos_lista" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Empresa</label>
-                                    <input type="text" name="nome_empresa" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+                                    <textarea name="endereco" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Atendente</label>
-                                    <input type="text" name="nome_atendente" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tom de Voz</label>
-                                    <input type="text" name="estilo_comunicacao" class="w-full px-3 py-2 border rounded-md">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Estilo de Mensagem</label>
-                                    <input type="text" name="regras_comunicacao" class="w-full px-3 py-2 border rounded-md">
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Papel da IA</label>
-                                    <input type="text" name="papel_ia" class="w-full px-3 py-2 border rounded-md" value="atender clientes, tirar dúvidas e direcionar para o atendimento humano">
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Limitações/Proibições</label>
-                                    <textarea name="proibicoes_texto" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Horário</label>
+                                    <input type="text" name="horario_funcionamento" class="w-full px-3 py-2 border rounded-md">
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Seção 2 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                                <h2 class="font-semibold text-gray-800">2) Menu Inicial</h2>
-                                <label class="flex items-center gap-2 text-sm">
-                                    <input type="checkbox" name="possui_menu" checked class="w-4 h-4 rounded">
-                                    Incluir menu
-                                </label>
+                    <!-- Seção 4 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">4) Regras de Negócio</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Regra de Preço</label>
+                                <input type="text" name="regra_preco_texto" class="w-full px-3 py-2 border rounded-md">
                             </div>
-                            <div id="menuSection">
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem de Boas-vindas</label>
-                                    <textarea name="mensagem_boas_vindas" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Opções do Menu</label>
-                                    <textarea name="menu_opcoes" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Triagem Automática (ir direto para humano)</label>
-                                    <input type="text" name="opcoes_transbordo_imediato" class="w-full px-3 py-2 border rounded-md">
-                                </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nível Técnico (marcas)</label>
+                                <input type="text" name="regra_marcas_texto" class="w-full px-3 py-2 border rounded-md">
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Seção 3 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">3) Contexto da Empresa</h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Contexto/Autoridade</label>
-                                    <textarea name="frase_autoridade" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Lista de Serviços</label>
-                                    <textarea name="servicos_lista" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
-                                        <textarea name="endereco" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Horário</label>
-                                        <input type="text" name="horario_funcionamento" class="w-full px-3 py-2 border rounded-md">
-                                    </div>
-                                </div>
+                    <!-- Seção 5 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">5) Catálogo</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Produtos/Serviços</label>
+                                <textarea name="produtos_lista" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tabela de Preços</label>
+                                <textarea name="tabela_precos" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Itens Adicionais</label>
+                                <input type="text" name="itens_adicionais" class="w-full px-3 py-2 border rounded-md">
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Seção 4 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">4) Regras de Negócio</h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Regra de Preço</label>
-                                    <input type="text" name="regra_preco_texto" class="w-full px-3 py-2 border rounded-md">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nível Técnico (marcas)</label>
-                                    <input type="text" name="regra_marcas_texto" class="w-full px-3 py-2 border rounded-md">
-                                </div>
+                    <!-- Seção 6 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">6) Fluxo de Atendimento</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Passo a Passo / Sondagem</label>
+                                <textarea name="frase_sondagem" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Qualificação / Experiência</label>
+                                <textarea name="pergunta_experiencia" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Documentação necessária</label>
+                                <textarea name="texto_documentacao" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Seção 5 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">5) Catálogo</h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Produtos/Serviços</label>
-                                    <textarea name="produtos_lista" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tabela de Preços</label>
-                                    <textarea name="tabela_precos" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Itens Adicionais</label>
-                                    <input type="text" name="itens_adicionais" class="w-full px-3 py-2 border rounded-md">
-                                </div>
+                    <!-- Seção 7 -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                            <h2 class="font-semibold text-gray-800">7) Tratamento de Objeções</h2>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="possui_objecoes" class="w-4 h-4 rounded" onchange="document.getElementById('objecoesSection').classList.toggle('hidden', !this.checked)">
+                                Incluir objeções
+                            </label>
+                        </div>
+                        <div id="objecoesSection" class="space-y-4 hidden">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Objeção de Preço</label>
+                                <textarea name="texto_objecoes" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Dúvida Técnica</label>
+                                <textarea name="texto_duvida_tecnica" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Seção 6 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">6) Fluxo de Atendimento</h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Passo a Passo / Sondagem</label>
-                                    <textarea name="frase_sondagem" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Qualificação / Experiência</label>
-                                    <textarea name="pergunta_experiencia" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Documentação necessária</label>
-                                    <textarea name="texto_documentacao" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
+                    <!-- Configurações -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">Configurações</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team ID</label>
+                                <input type="text" name="team_id" class="w-full px-3 py-2 border rounded-md" value="1">
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Seção 7 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                                <h2 class="font-semibold text-gray-800">7) Tratamento de Objeções</h2>
-                                <label class="flex items-center gap-2 text-sm">
-                                    <input type="checkbox" name="possui_objecoes" class="w-4 h-4 rounded">
-                                    Incluir objeções
-                                </label>
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-magic mr-2"></i>Gerar Prompt
+                    </button>
+                </form>
+
+                <!-- ==================== FORM: LOCADORA DE EQUIPAMENTOS ==================== -->
+                <form id="formLocadora" class="space-y-4 hidden">
+                    <input type="hidden" name="template_type" value="locadora_equipamentos">
+
+                    <!-- Identidade -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">1) Identidade</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Empresa</label>
+                                <input type="text" name="nome_empresa" class="w-full px-3 py-2 border rounded-md">
                             </div>
-                            <div id="objecoesSection" class="space-y-4 hidden">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Objeção de Preço</label>
-                                    <textarea name="texto_objecoes" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Dúvida Técnica</label>
-                                    <textarea name="texto_duvida_tecnica" rows="2" class="w-full px-3 py-2 border rounded-md"></textarea>
-                                </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Atendente</label>
+                                <input type="text" name="nome_atendente" class="w-full px-3 py-2 border rounded-md">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Papel</label>
+                                <input type="text" name="papel_atendente" class="w-full px-3 py-2 border rounded-md" value="acolher, puxar necessidade e agilizar o processo">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tom</label>
+                                <select name="tom_comunicacao" class="w-full px-3 py-2 border rounded-md">
+                                    <option value="informal, direto/comercial">Informal / Direto / Comercial</option>
+                                    <option value="formal, consultivo">Formal / Consultivo</option>
+                                    <option value="descontraído, amigável">Descontraído / Amigável</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Proibições</label>
+                                <input type="text" name="proibicoes" class="w-full px-3 py-2 border rounded-md" value="sem emojis, sem formalês, sem parecer IA">
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Configurações -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">Configurações</h2>
+                    <!-- Sobre a Empresa -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">2) Sobre a Empresa</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Descrição da Empresa</label>
+                                <textarea name="descricao_empresa" rows="2" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Locadora referência em Jundiaí-SP"></textarea>
+                            </div>
                             <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Anos de Experiência</label>
+                                    <input type="text" name="anos_experiencia" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: 13 anos">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ticket Médio</label>
+                                    <input type="text" name="ticket_medio" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: R$ 160 mil/mês">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Diferenciais</label>
+                                <textarea name="diferenciais" rows="2" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Entrega imediata, preço acessível, cobrimos orçamentos"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Foco de Atuação</label>
+                                <input type="text" name="foco_atuacao" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Construção civil em Jundiaí-SP">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Catálogo com Upload de PDF -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">3) Catálogo de Equipamentos</h2>
+
+                        <!-- Upload de PDF -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Upload do Catálogo (PDF)</label>
+                            <div id="pdfDropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition cursor-pointer"
+                                 onclick="document.getElementById('pdfInput').click()">
+                                <i class="fas fa-file-pdf text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-500 text-sm">Arraste um PDF aqui ou clique para selecionar</p>
+                                <p class="text-xs text-gray-400 mt-1">Máx 4MB - O sistema extrai os equipamentos automaticamente</p>
+                                <input type="file" id="pdfInput" accept=".pdf" class="hidden" onchange="handlePdfUpload(this)">
+                            </div>
+                            <div id="pdfStatus" class="mt-2 hidden">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <i id="pdfStatusIcon" class="fas fa-spinner fa-spin text-blue-500"></i>
+                                    <span id="pdfStatusText">Processando PDF...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Textarea do catálogo -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Categorias e Equipamentos</label>
+                            <textarea name="catalogo_equipamentos" id="catalogoTextarea" rows="8" class="w-full px-3 py-2 border rounded-md font-mono text-sm"
+                                      placeholder="Preencha manualmente ou faça upload do PDF:
+
+Concreto e Alvenaria: Betoneira 400L, Vibrador de concreto
+Compactação: Placa vibratória, Rolo compactador
+Corte e Perfuração: Martelete, Rompedor, Serra circular
+Elevação: Talhas, Andaimes tubulares"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Objeções -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">4) Tratamento de Objeções</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Preço Alto</label>
+                                <input type="text" name="objecao_preco" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Cobrimos orçamentos. Me passa o valor que conseguiu?">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Urgência</label>
+                                <input type="text" name="objecao_urgencia" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Entrega imediata é nosso forte. Quando precisa?">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Pechincha</label>
+                                <input type="text" name="objecao_pechincha" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Vamos fazer o melhor preço. Qual equipamento precisa?">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comunicação e Transferência -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">5) Comunicação e Transferência</h2>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Máx linhas por mensagem</label>
+                                    <input type="number" name="max_linhas" class="w-full px-3 py-2 border rounded-md" value="3">
+                                </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Team ID</label>
                                     <input type="text" name="team_id" class="w-full px-3 py-2 border rounded-md" value="1">
                                 </div>
                             </div>
-                        </div>
-
-                        <button type="submit" class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
-                            <i class="fas fa-magic mr-2"></i>Gerar Prompt
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Resultado -->
-                <div class="space-y-4">
-                    <div class="bg-white rounded-lg shadow overflow-hidden sticky top-4">
-                        <div class="flex items-center justify-between p-4 border-b bg-gray-50">
-                            <h2 class="font-semibold text-gray-800">Prompt Gerado</h2>
-                            <div class="flex gap-2">
-                                <button onclick="toggleView()" id="viewToggle" class="px-3 py-1 text-sm bg-gray-200 rounded-lg">
-                                    <i class="fas fa-eye mr-1"></i>Preview
-                                </button>
-                                <button onclick="copyPrompt()" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
-                                    <i class="fas fa-copy mr-1"></i>Copiar
-                                </button>
+                            <div>
+                                <label class="flex items-center gap-2 text-sm">
+                                    <input type="checkbox" name="regra_sem_valores" checked class="w-4 h-4 rounded">
+                                    Não mencionar valores (vendedor confirma)
+                                </label>
                             </div>
-                        </div>
-                        <div id="promptResult" class="p-4 max-h-[600px] overflow-y-auto">
-                            <div class="text-gray-400 text-center py-12">
-                                <i class="fas fa-file-alt text-4xl mb-4"></i>
-                                <p>Preencha o formulário e clique em "Gerar Prompt"</p>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Regras extras de comunicação (uma por linha)</label>
+                                <textarea name="regras_comunicacao_extras" rows="2" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Sempre perguntar se já tem cadastro"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Guardrails extras (uma por linha)</label>
+                                <textarea name="guardrails" rows="2" class="w-full px-3 py-2 border rounded-md" placeholder="Ex: Cobrir orçamentos quando mencionado preço"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Refinar com IA -->
-                    <div id="refineSection" class="bg-white rounded-lg shadow overflow-hidden hidden">
-                        <div class="p-4 border-b bg-purple-50">
-                            <h3 class="font-semibold text-purple-800"><i class="fas fa-robot mr-2"></i>Refinar com IA</h3>
-                        </div>
-                        <div class="p-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="refineInput" class="flex-1 px-3 py-2 border rounded-md" placeholder='Ex: "adicione regra sobre horário de almoço"'>
-                                <button onclick="refinePrompt()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                                    Refinar
-                                </button>
-                            </div>
-                        </div>
+                    <!-- Instrução Final -->
+                    <div class="bg-white p-5 rounded-lg shadow">
+                        <h2 class="font-semibold text-gray-800 mb-4 pb-2 border-b">6) Instrução Final (opcional)</h2>
+                        <textarea name="instrucao_final" rows="3" class="w-full px-3 py-2 border rounded-md" placeholder="Instruções adicionais para o comportamento da IA..."></textarea>
                     </div>
-                </div>
+
+                    <button type="submit" class="w-full py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition">
+                        <i class="fas fa-magic mr-2"></i>Gerar Prompt (Locadora)
+                    </button>
+                </form>
             </div>
-        </div>
 
-        <!-- Tab: Lista de Prompts -->
-        <div id="tab-list" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="p-4 border-b bg-gray-50">
-                        <h2 class="font-semibold text-gray-800">Clientes</h2>
+            <!-- Resultado -->
+            <div class="space-y-4">
+                <div class="bg-white rounded-lg shadow overflow-hidden sticky top-4">
+                    <div class="flex items-center justify-between p-4 border-b bg-gray-50">
+                        <h2 class="font-semibold text-gray-800">Prompt Gerado</h2>
+                        <div class="flex gap-2">
+                            <button onclick="toggleView()" id="viewToggle" class="px-3 py-1 text-sm bg-gray-200 rounded-lg">
+                                <i class="fas fa-eye mr-1"></i>Preview
+                            </button>
+                            <button onclick="copyPrompt()" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
+                                <i class="fas fa-copy mr-1"></i>Copiar
+                            </button>
+                        </div>
                     </div>
-                    <div id="promptsList" class="max-h-[600px] overflow-y-auto">
-                        <div class="p-8 text-center text-gray-400">Carregando...</div>
+                    <div id="promptResult" class="p-4 max-h-[600px] overflow-y-auto">
+                        <div class="text-gray-400 text-center py-12">
+                            <i class="fas fa-file-alt text-4xl mb-4"></i>
+                            <p>Preencha o formulário e clique em "Gerar Prompt"</p>
+                        </div>
                     </div>
                 </div>
-                <div class="lg:col-span-2">
-                    <div class="bg-white rounded-lg shadow overflow-hidden">
-                        <div class="flex items-center justify-between p-4 border-b bg-gray-50">
-                            <h2 id="selectedClient" class="font-semibold text-gray-800">Selecione um cliente</h2>
-                            <div class="flex gap-2">
-                                <button onclick="toggleEditMode()" id="editToggle" class="px-3 py-1 text-sm bg-gray-200 rounded-lg hidden">
-                                    <i class="fas fa-edit mr-1"></i>Editar
-                                </button>
-                                <button onclick="savePrompt()" id="saveBtn" class="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hidden">
-                                    <i class="fas fa-save mr-1"></i>Salvar
-                                </button>
-                                <button onclick="copySelectedPrompt()" id="copyBtn" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hidden">
-                                    <i class="fas fa-copy mr-1"></i>Copiar
-                                </button>
-                            </div>
-                        </div>
-                        <div id="selectedPromptContent" class="p-4 max-h-[500px] overflow-y-auto">
-                            <div class="text-gray-400 text-center py-12">
-                                <i class="fas fa-mouse-pointer text-4xl mb-4"></i>
-                                <p>Clique em um cliente para ver o prompt</p>
-                            </div>
+
+                <!-- Refinar com IA -->
+                <div id="refineSection" class="bg-white rounded-lg shadow overflow-hidden hidden">
+                    <div class="p-4 border-b bg-purple-50">
+                        <h3 class="font-semibold text-purple-800"><i class="fas fa-robot mr-2"></i>Refinar com IA</h3>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="refineInput" class="flex-1 px-3 py-2 border rounded-md" placeholder='Ex: "adicione regra sobre horário de almoço"'>
+                            <button onclick="refinePrompt()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                Refinar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -319,176 +454,33 @@ Ana
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         let currentPrompt = '';
-        let selectedFilename = '';
+        let currentTemplate = 'atendente_geral';
         let isMarkdownView = true;
-        let isEditMode = false;
 
-        // Mapeamento das perguntas do Google Forms para os campos do formulário
-        const MAPEAMENTO = {
-            "Nome da Empresa": "nome_empresa",
-            "Nome do Atendente: Qual nome a IA deve usar?": "nome_atendente",
-            "Tom de Voz: Deve ser formal, descontraído, consultivo ou focado em vendas?": "estilo_comunicacao",
-            "Limitações de Escrita: Existem termos proibidos (ex: nomes de marcas, \"formalês\")?": "proibicoes_texto",
-            "Estilo de Mensagem: Prefere parágrafos curtos, uso de emojis ou texto corrido?": "regras_comunicacao",
-            "Mensagem de Boas-Vindas: Como a IA deve se apresentar no primeiro contato?": "mensagem_boas_vindas",
-            "Opções do Menu: Quais são os caminhos principais que o cliente pode escolher (ex: 1. Orçamento, 2. Suporte)?": "menu_opcoes",
-            "Triagem Automática: Quais opções devem ser enviadas diretamente para um humano sem passar pela IA?": "opcoes_transbordo_imediato",
-            "Contexto da Empresa: Há quanto tempo está no mercado? Qual o diferencial principal?": "frase_autoridade",
-            "Lista de Serviços: Além do serviço principal, o que mais a empresa oferece (venda, manutenção, serviços)?": "servicos_lista",
-            "Localização e Horários: Endereço físico e horários de funcionamento para consulta da IA.": "localizacao_horarios",
-            "Regra de Preço: A IA pode falar preços abertamente ou apenas se o cliente perguntar?": "regra_preco_texto",
-            "Nível Técnico: A IA deve usar nomes de marcas ou focar apenas na solução/equipamento?": "regra_marcas_texto",
-            "Produtos/Serviços: Quais os itens disponíveis?": "produtos_lista",
-            "Tabela de Preços: Quais os valores para diária, semana, quinzena e mês?": "tabela_precos",
-            "Itens Adicionais: Existem consumíveis ou acessórios que podem ser vendidos junto (ex: lixas)?": "itens_adicionais",
-            "Passo a Passo: Qual a ordem ideal das perguntas (ex: 1. Projeto -> 2. Experiência -> 3. Data -> 4. Cadastro)?": "frase_sondagem",
-            "Qualificação: O que a IA precisa saber antes de passar para o vendedor (ex: tipo de tinta, se já tem cadastro)?": "texto_documentacao",
-            "Preço: O que a IA deve responder se o cliente disser que está caro?": "texto_objecoes",
-            "Dúvida Técnica: Como a IA deve agir se o cliente não souber qual equipamento escolher?": "texto_duvida_tecnica",
-        };
+        // ==================== TEMPLATE SWITCHING ====================
 
-        // Modal functions
-        function openPasteModal() {
-            document.getElementById('pasteModal').classList.add('active');
+        function switchTemplate(type) {
+            currentTemplate = type;
+            document.getElementById('formAtendenteGeral').classList.toggle('hidden', type !== 'atendente_geral');
+            document.getElementById('formLocadora').classList.toggle('hidden', type !== 'locadora_equipamentos');
+
+            // Atualiza visual dos cards
+            document.querySelectorAll('.template-card').forEach((card, i) => {
+                const isSelected = (i === 0 && type === 'atendente_geral') || (i === 1 && type === 'locadora_equipamentos');
+                card.classList.toggle('selected', isSelected);
+                card.classList.toggle('border-gray-200', !isSelected);
+            });
         }
 
-        function closePasteModal() {
-            document.getElementById('pasteModal').classList.remove('active');
-        }
+        // ==================== FORM SUBMIT ====================
 
-        function processarRespostas() {
-            const texto = document.getElementById('pasteArea').value;
-            if (!texto.trim()) {
-                alert('Cole as respostas primeiro!');
-                return;
-            }
-
-            const dados = parseRespostas(texto);
-            preencherFormulario(dados);
-            closePasteModal();
-            alert('Formulário preenchido! Revise e clique em "Gerar Prompt"');
-        }
-
-        function parseRespostas(texto) {
-            const dados = {};
-            const linhas = texto.split('\n');
-            let perguntaAtual = null;
-            let respostaAtual = [];
-
-            for (let i = 0; i < linhas.length; i++) {
-                const linha = linhas[i].trim();
-
-                // Pula linhas vazias e asteriscos
-                if (linha === '' || linha === '*') {
-                    if (perguntaAtual && respostaAtual.length > 0) {
-                        const campo = MAPEAMENTO[perguntaAtual];
-                        if (campo) {
-                            dados[campo] = respostaAtual.join('\n').trim();
-                        }
-                        respostaAtual = [];
-                    }
-                    continue;
-                }
-
-                // Verifica se é uma pergunta conhecida
-                let ehPergunta = false;
-                for (const pergunta of Object.keys(MAPEAMENTO)) {
-                    if (linha.startsWith(pergunta.substring(0, 25)) || pergunta.startsWith(linha.substring(0, 25))) {
-                        if (perguntaAtual && respostaAtual.length > 0) {
-                            const campo = MAPEAMENTO[perguntaAtual];
-                            if (campo) {
-                                dados[campo] = respostaAtual.join('\n').trim();
-                            }
-                        }
-                        perguntaAtual = pergunta;
-                        respostaAtual = [];
-                        ehPergunta = true;
-                        break;
-                    }
-                }
-
-                // Se não é pergunta, é parte da resposta
-                if (!ehPergunta && perguntaAtual) {
-                    // Ignora cabeçalhos de seção
-                    if (!linha.match(/^(Porta de Entrada|Quem somos|Regras de Negócio|Catálogo e Valores|Fluxo Lógico|Tratamento de Objeções)/i)) {
-                        respostaAtual.push(linha);
-                    }
-                }
-            }
-
-            // Salva a última resposta
-            if (perguntaAtual && respostaAtual.length > 0) {
-                const campo = MAPEAMENTO[perguntaAtual];
-                if (campo) {
-                    dados[campo] = respostaAtual.join('\n').trim();
-                }
-            }
-
-            return dados;
-        }
-
-        function preencherFormulario(dados) {
-            const form = document.getElementById('promptForm');
-
-            // Processa localização e horários
-            if (dados.localizacao_horarios) {
-                const texto = dados.localizacao_horarios;
-                const match = texto.match(/(\d{1,2}[Hh].*)/);
-                if (match) {
-                    const idx = texto.indexOf(match[0]);
-                    dados.endereco = texto.substring(0, idx).trim();
-                    dados.horario_funcionamento = match[0].trim();
-                } else {
-                    dados.endereco = texto;
-                }
-            }
-
-            // Preenche cada campo
-            for (const [campo, valor] of Object.entries(dados)) {
-                const input = form.querySelector(`[name="${campo}"]`);
-                if (input) {
-                    input.value = valor;
-                }
-            }
-
-            // Ativa checkbox de objeções se tiver texto
-            if (dados.texto_objecoes || dados.texto_duvida_tecnica) {
-                form.querySelector('[name="possui_objecoes"]').checked = true;
-                document.getElementById('objecoesSection').classList.remove('hidden');
-            }
-
-            // Define pergunta_experiencia a partir de texto_documentacao se não existir
-            if (!dados.pergunta_experiencia && dados.texto_documentacao) {
-                form.querySelector('[name="pergunta_experiencia"]').value = dados.texto_documentacao;
-            }
-        }
-
-        // Toggle sections
-        document.querySelector('[name="possui_menu"]').addEventListener('change', function() {
-            document.getElementById('menuSection').classList.toggle('hidden', !this.checked);
-        });
-
-        document.querySelector('[name="possui_objecoes"]').addEventListener('change', function() {
-            document.getElementById('objecoesSection').classList.toggle('hidden', !this.checked);
-        });
-
-        // Tabs
-        function showTab(tab) {
-            document.getElementById('tab-form').classList.toggle('hidden', tab !== 'form');
-            document.getElementById('tab-list').classList.toggle('hidden', tab !== 'list');
-            document.getElementById('btn-form').classList.toggle('tab-active', tab === 'form');
-            document.getElementById('btn-list').classList.toggle('tab-active', tab === 'list');
-            document.getElementById('btn-form').classList.toggle('text-gray-600', tab !== 'form');
-            document.getElementById('btn-list').classList.toggle('text-gray-600', tab !== 'list');
-            if (tab === 'list') loadPromptsList();
-        }
-
-        // Form submit
-        document.getElementById('promptForm').addEventListener('submit', async function(e) {
+        // Atendente Geral
+        document.getElementById('formAtendenteGeral').addEventListener('submit', async function(e) {
             e.preventDefault();
             const formData = new FormData(this);
 
             const data = {
+                template_type: 'atendente_geral',
                 nome_empresa: formData.get('nome_empresa'),
                 nome_atendente: formData.get('nome_atendente'),
                 papel_ia: formData.get('papel_ia'),
@@ -516,6 +508,57 @@ Ana
                 team_id: formData.get('team_id') || '1',
             };
 
+            await submitGenerate(data);
+        });
+
+        // Locadora de Equipamentos
+        document.getElementById('formLocadora').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            // Parsear catálogo do textarea
+            const catalogoText = formData.get('catalogo_equipamentos') || '';
+            const categorias = [];
+            for (const linha of catalogoText.split('\n')) {
+                const trimmed = linha.trim();
+                if (!trimmed) continue;
+                const parts = trimmed.split(':');
+                if (parts.length >= 2) {
+                    categorias.push({
+                        categoria: parts[0].trim(),
+                        itens: parts.slice(1).join(':').split(',').map(x => x.trim()).filter(Boolean)
+                    });
+                }
+            }
+
+            const data = {
+                template_type: 'locadora_equipamentos',
+                nome_empresa: formData.get('nome_empresa'),
+                nome_atendente: formData.get('nome_atendente'),
+                papel_atendente: formData.get('papel_atendente'),
+                tom_comunicacao: formData.get('tom_comunicacao'),
+                proibicoes: formData.get('proibicoes'),
+                descricao_empresa: formData.get('descricao_empresa'),
+                anos_experiencia: formData.get('anos_experiencia'),
+                ticket_medio: formData.get('ticket_medio'),
+                diferenciais: formData.get('diferenciais'),
+                foco_atuacao: formData.get('foco_atuacao'),
+                categorias_equipamentos: categorias,
+                objecao_preco: formData.get('objecao_preco'),
+                objecao_urgencia: formData.get('objecao_urgencia'),
+                objecao_pechincha: formData.get('objecao_pechincha'),
+                max_linhas: parseInt(formData.get('max_linhas')) || 3,
+                regra_sem_valores: formData.get('regra_sem_valores') === 'on',
+                regras_comunicacao_extras: formData.get('regras_comunicacao_extras')?.split('\n').filter(x => x.trim()) || [],
+                guardrails: formData.get('guardrails')?.split('\n').filter(x => x.trim()) || [],
+                team_id: formData.get('team_id') || '1',
+                instrucao_final: formData.get('instrucao_final') || null,
+            };
+
+            await submitGenerate(data);
+        });
+
+        async function submitGenerate(data) {
             try {
                 const res = await fetch('/generate', {
                     method: 'POST',
@@ -535,7 +578,201 @@ Ana
             } catch (err) {
                 alert('Erro ao gerar prompt: ' + err.message);
             }
-        });
+        }
+
+        // ==================== PDF UPLOAD ====================
+
+        async function handlePdfUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 4 * 1024 * 1024) {
+                alert('Arquivo muito grande (máx 4MB)');
+                return;
+            }
+
+            const statusEl = document.getElementById('pdfStatus');
+            const statusText = document.getElementById('pdfStatusText');
+            const statusIcon = document.getElementById('pdfStatusIcon');
+            statusEl.classList.remove('hidden');
+            statusIcon.className = 'fas fa-spinner fa-spin text-blue-500';
+            statusText.textContent = 'Enviando e processando PDF...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Erro ao processar PDF');
+                }
+
+                const result = await res.json();
+
+                // Formatar categorias no textarea
+                let catalogText = '';
+                if (result.categorias && result.categorias.length > 0) {
+                    for (const cat of result.categorias) {
+                        catalogText += `${cat.categoria}: ${cat.itens.join(', ')}\n`;
+                    }
+                } else {
+                    catalogText = result.raw_text || '';
+                }
+
+                document.getElementById('catalogoTextarea').value = catalogText;
+                statusText.textContent = result.categorias?.length
+                    ? `PDF processado! ${result.categorias.length} categorias encontradas.`
+                    : 'Texto extraído. Organize as categorias manualmente.';
+                statusIcon.className = 'fas fa-check-circle text-green-500';
+            } catch (err) {
+                statusText.textContent = 'Erro: ' + err.message;
+                statusIcon.className = 'fas fa-exclamation-circle text-red-500';
+            }
+        }
+
+        // Drag and drop
+        const dropZone = document.getElementById('pdfDropZone');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-blue-400', 'bg-blue-50');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'application/pdf') {
+                    const input = document.getElementById('pdfInput');
+                    input.files = e.dataTransfer.files;
+                    handlePdfUpload(input);
+                }
+            });
+        }
+
+        // ==================== COLAR RESPOSTAS (Google Forms) ====================
+
+        const MAPEAMENTO = {
+            "Nome da Empresa": "nome_empresa",
+            "Nome do Atendente: Qual nome a IA deve usar?": "nome_atendente",
+            "Tom de Voz: Deve ser formal, descontraído, consultivo ou focado em vendas?": "estilo_comunicacao",
+            "Limitações de Escrita: Existem termos proibidos (ex: nomes de marcas, \"formalês\")?": "proibicoes_texto",
+            "Estilo de Mensagem: Prefere parágrafos curtos, uso de emojis ou texto corrido?": "regras_comunicacao",
+            "Mensagem de Boas-Vindas: Como a IA deve se apresentar no primeiro contato?": "mensagem_boas_vindas",
+            "Opções do Menu: Quais são os caminhos principais que o cliente pode escolher (ex: 1. Orçamento, 2. Suporte)?": "menu_opcoes",
+            "Triagem Automática: Quais opções devem ser enviadas diretamente para um humano sem passar pela IA?": "opcoes_transbordo_imediato",
+            "Contexto da Empresa: Há quanto tempo está no mercado? Qual o diferencial principal?": "frase_autoridade",
+            "Lista de Serviços: Além do serviço principal, o que mais a empresa oferece (venda, manutenção, serviços)?": "servicos_lista",
+            "Localização e Horários: Endereço físico e horários de funcionamento para consulta da IA.": "localizacao_horarios",
+            "Regra de Preço: A IA pode falar preços abertamente ou apenas se o cliente perguntar?": "regra_preco_texto",
+            "Nível Técnico: A IA deve usar nomes de marcas ou focar apenas na solução/equipamento?": "regra_marcas_texto",
+            "Produtos/Serviços: Quais os itens disponíveis?": "produtos_lista",
+            "Tabela de Preços: Quais os valores para diária, semana, quinzena e mês?": "tabela_precos",
+            "Itens Adicionais: Existem consumíveis ou acessórios que podem ser vendidos junto (ex: lixas)?": "itens_adicionais",
+            "Passo a Passo: Qual a ordem ideal das perguntas (ex: 1. Projeto -> 2. Experiência -> 3. Data -> 4. Cadastro)?": "frase_sondagem",
+            "Qualificação: O que a IA precisa saber antes de passar para o vendedor (ex: tipo de tinta, se já tem cadastro)?": "texto_documentacao",
+            "Preço: O que a IA deve responder se o cliente disser que está caro?": "texto_objecoes",
+            "Dúvida Técnica: Como a IA deve agir se o cliente não souber qual equipamento escolher?": "texto_duvida_tecnica",
+        };
+
+        function openPasteModal() { document.getElementById('pasteModal').classList.add('active'); }
+        function closePasteModal() { document.getElementById('pasteModal').classList.remove('active'); }
+
+        function processarRespostas() {
+            const texto = document.getElementById('pasteArea').value;
+            if (!texto.trim()) { alert('Cole as respostas primeiro!'); return; }
+            const dados = parseRespostas(texto);
+            preencherFormulario(dados);
+            closePasteModal();
+            alert('Formulário preenchido! Revise e clique em "Gerar Prompt"');
+        }
+
+        function parseRespostas(texto) {
+            const dados = {};
+            const linhas = texto.split('\n');
+            let perguntaAtual = null;
+            let respostaAtual = [];
+
+            for (let i = 0; i < linhas.length; i++) {
+                const linha = linhas[i].trim();
+                if (linha === '' || linha === '*') {
+                    if (perguntaAtual && respostaAtual.length > 0) {
+                        const campo = MAPEAMENTO[perguntaAtual];
+                        if (campo) dados[campo] = respostaAtual.join('\n').trim();
+                        respostaAtual = [];
+                    }
+                    continue;
+                }
+
+                let ehPergunta = false;
+                for (const pergunta of Object.keys(MAPEAMENTO)) {
+                    if (linha.startsWith(pergunta.substring(0, 25)) || pergunta.startsWith(linha.substring(0, 25))) {
+                        if (perguntaAtual && respostaAtual.length > 0) {
+                            const campo = MAPEAMENTO[perguntaAtual];
+                            if (campo) dados[campo] = respostaAtual.join('\n').trim();
+                        }
+                        perguntaAtual = pergunta;
+                        respostaAtual = [];
+                        ehPergunta = true;
+                        break;
+                    }
+                }
+
+                if (!ehPergunta && perguntaAtual) {
+                    if (!linha.match(/^(Porta de Entrada|Quem somos|Regras de Negócio|Catálogo e Valores|Fluxo Lógico|Tratamento de Objeções)/i)) {
+                        respostaAtual.push(linha);
+                    }
+                }
+            }
+
+            if (perguntaAtual && respostaAtual.length > 0) {
+                const campo = MAPEAMENTO[perguntaAtual];
+                if (campo) dados[campo] = respostaAtual.join('\n').trim();
+            }
+
+            return dados;
+        }
+
+        function preencherFormulario(dados) {
+            // Preenche no form do atendente geral (é o que usa Google Forms)
+            switchTemplate('atendente_geral');
+            const form = document.getElementById('formAtendenteGeral');
+
+            if (dados.localizacao_horarios) {
+                const texto = dados.localizacao_horarios;
+                const match = texto.match(/(\d{1,2}[Hh].*)/);
+                if (match) {
+                    const idx = texto.indexOf(match[0]);
+                    dados.endereco = texto.substring(0, idx).trim();
+                    dados.horario_funcionamento = match[0].trim();
+                } else {
+                    dados.endereco = texto;
+                }
+            }
+
+            for (const [campo, valor] of Object.entries(dados)) {
+                const input = form.querySelector(`[name="${campo}"]`);
+                if (input) input.value = valor;
+            }
+
+            if (dados.texto_objecoes || dados.texto_duvida_tecnica) {
+                form.querySelector('[name="possui_objecoes"]').checked = true;
+                document.getElementById('objecoesSection').classList.remove('hidden');
+            }
+
+            if (!dados.pergunta_experiencia && dados.texto_documentacao) {
+                form.querySelector('[name="pergunta_experiencia"]').value = dados.texto_documentacao;
+            }
+        }
+
+        // ==================== PROMPT DISPLAY ====================
 
         function renderPrompt() {
             const el = document.getElementById('promptResult');
@@ -551,10 +788,11 @@ Ana
             document.getElementById('viewToggle').innerHTML = isMarkdownView
                 ? '<i class="fas fa-eye mr-1"></i>Preview'
                 : '<i class="fas fa-code mr-1"></i>Markdown';
-            renderPrompt();
+            if (currentPrompt) renderPrompt();
         }
 
         function copyPrompt() {
+            if (!currentPrompt) { alert('Gere um prompt primeiro!'); return; }
             navigator.clipboard.writeText(currentPrompt);
             alert('Copiado!');
         }
@@ -576,92 +814,6 @@ Ana
             } catch (err) {
                 alert('Erro ao refinar: ' + err.message);
             }
-        }
-
-        // Lista de prompts
-        async function loadPromptsList() {
-            try {
-                const res = await fetch('/prompts');
-                const data = await res.json();
-                const el = document.getElementById('promptsList');
-
-                if (data.prompts.length === 0) {
-                    el.innerHTML = '<div class="p-8 text-center text-gray-400">Nenhum prompt salvo</div>';
-                    return;
-                }
-
-                el.innerHTML = data.prompts.map(p => `
-                    <button onclick="loadPrompt('${p.filename}')" class="w-full px-4 py-3 text-left hover:bg-gray-50 border-b">
-                        <div class="font-medium text-gray-800">${extractName(p.filename)}</div>
-                        <div class="text-sm text-gray-500">${formatDate(p.created_at)}</div>
-                    </button>
-                `).join('');
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        async function loadPrompt(filename) {
-            try {
-                const res = await fetch(`/prompts/${filename}`);
-                const data = await res.json();
-                selectedFilename = filename;
-                currentPrompt = data.content;
-
-                document.getElementById('selectedClient').textContent = extractName(filename);
-                document.getElementById('selectedPromptContent').innerHTML = `<div class="prose prose-sm max-w-none">${marked.parse(data.content)}</div>`;
-                document.getElementById('editToggle').classList.remove('hidden');
-                document.getElementById('copyBtn').classList.remove('hidden');
-                isEditMode = false;
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        function toggleEditMode() {
-            isEditMode = !isEditMode;
-            const el = document.getElementById('selectedPromptContent');
-            const saveBtn = document.getElementById('saveBtn');
-
-            if (isEditMode) {
-                el.innerHTML = `<textarea id="editArea" class="w-full h-[450px] p-2 border rounded font-mono text-sm">${escapeHtml(currentPrompt)}</textarea>`;
-                saveBtn.classList.remove('hidden');
-                document.getElementById('editToggle').innerHTML = '<i class="fas fa-eye mr-1"></i>Preview';
-            } else {
-                el.innerHTML = `<div class="prose prose-sm max-w-none">${marked.parse(currentPrompt)}</div>`;
-                saveBtn.classList.add('hidden');
-                document.getElementById('editToggle').innerHTML = '<i class="fas fa-edit mr-1"></i>Editar';
-            }
-        }
-
-        async function savePrompt() {
-            const content = document.getElementById('editArea').value;
-            try {
-                await fetch(`/prompts/${selectedFilename}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content })
-                });
-                currentPrompt = content;
-                toggleEditMode();
-                alert('Salvo!');
-            } catch (err) {
-                alert('Erro ao salvar');
-            }
-        }
-
-        function copySelectedPrompt() {
-            navigator.clipboard.writeText(currentPrompt);
-            alert('Copiado!');
-        }
-
-        function extractName(filename) {
-            const parts = filename.replace('.md', '').split('_');
-            return parts.length > 2 ? parts.slice(2).join(' ') : filename;
-        }
-
-        function formatDate(ts) {
-            return new Date(ts * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         }
 
         function escapeHtml(text) {

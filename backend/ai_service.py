@@ -124,6 +124,59 @@ Retorne APENAS o JSON processado, sem explicações."""
 
 
 # ============================================================
+# ESTRUTURAÇÃO DE CATÁLOGO DE PDF
+# ============================================================
+
+CATALOG_STRUCTURER_PROMPT = """Você é um especialista em catálogos de locação de equipamentos.
+Dado o texto extraído de um PDF de catálogo, organize-o em categorias com seus itens.
+
+Retorne APENAS um JSON válido no formato:
+{
+  "categorias": [
+    {
+      "categoria": "Concreto e Alvenaria",
+      "itens": ["Betoneira 400L", "Vibrador de Concreto", "Régua Vibratória"]
+    },
+    {
+      "categoria": "Compactação",
+      "itens": ["Placa Vibratória", "Rolo Compactador", "Sapo Compactador"]
+    }
+  ]
+}
+
+Categorias típicas: Concreto e Alvenaria, Compactação, Corte e Perfuração, Elevação e Transporte,
+Estrutura e Apoio, Ferramentas Elétricas, Containers, Equipamentos Especializados,
+Geração de Energia, Demolição, Jardinagem, Pintura, Limpeza, etc.
+
+- Agrupe itens similares na mesma categoria
+- Use nomes comerciais dos equipamentos
+- Se o texto não parecer um catálogo de equipamentos, retorne categorias vazias."""
+
+
+async def structure_catalog_from_text(raw_text: str) -> dict:
+    """Usa IA para estruturar texto bruto de PDF em categorias de equipamentos."""
+    client = get_client()
+
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": CATALOG_STRUCTURER_PROMPT},
+            {"role": "user", "content": f"Texto extraído do PDF:\n\n{raw_text[:4000]}"}
+        ],
+        temperature=0.2,
+        max_tokens=2000,
+    )
+
+    resposta = response.choices[0].message.content.strip()
+    if resposta.startswith("```"):
+        resposta = resposta.split("```")[1]
+        if resposta.startswith("json"):
+            resposta = resposta[4:]
+
+    return json.loads(resposta)
+
+
+# ============================================================
 # REFINAMENTO DE PROMPT
 # ============================================================
 

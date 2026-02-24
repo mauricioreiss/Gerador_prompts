@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 
 
 class Produto(BaseModel):
@@ -7,8 +7,15 @@ class Produto(BaseModel):
     precos: str = ""
 
 
+class CategoriaEquipamento(BaseModel):
+    categoria: str = ""
+    itens: list[str] = Field(default_factory=list)
+
+
 class PromptRequest(BaseModel):
     """Todos os campos são opcionais com valores padrão."""
+
+    template_type: Literal["atendente_geral"] = "atendente_geral"
 
     # Identidade
     nome_empresa: str = "Empresa"
@@ -121,3 +128,63 @@ class GoogleFormWebhook(BaseModel):
     instrucao_final: Optional[str] = None
     itens_adicionais: Optional[str] = None
     email_destino: Optional[str] = None
+
+
+class LocadoraPromptRequest(BaseModel):
+    """Schema para o template de locadora de equipamentos (estilo JundMega)."""
+
+    template_type: Literal["locadora_equipamentos"] = "locadora_equipamentos"
+
+    # Identidade
+    nome_atendente: str = "Assistente"
+    nome_empresa: str = "Empresa"
+    papel_atendente: str = "acolher, puxar necessidade e agilizar o processo"
+    tom_comunicacao: str = "informal, direto/comercial"
+    proibicoes: str = "sem emojis, sem formalês, sem parecer IA"
+
+    # Sobre a Empresa
+    descricao_empresa: str = ""
+    anos_experiencia: str = ""
+    diferenciais: str = ""
+    foco_atuacao: str = ""
+    ticket_medio: str = ""
+
+    # Catálogo de Equipamentos
+    categorias_equipamentos: list[CategoriaEquipamento] = Field(default_factory=list)
+
+    # Fluxo de Coleta
+    etapas_fluxo: list[str] = Field(default_factory=lambda: [
+        "Cumprimentar e perguntar o que precisa",
+        "Identificar equipamento necessário",
+        "Perguntar período de locação",
+        "Solicitar local de entrega",
+        "Confirmar data de entrega",
+        "Verificar se já tem cadastro",
+        "Se não tem cadastro, solicitar documentos",
+        "Transferir para vendedor",
+    ])
+
+    # Objeções
+    objecao_preco: str = ""
+    objecao_urgencia: str = ""
+    objecao_pechincha: str = ""
+
+    # Comunicação
+    max_linhas: int = 3
+    regra_sem_valores: bool = True
+    regras_comunicacao_extras: list[str] = Field(default_factory=list)
+
+    # Transferência
+    condicoes_transferencia: list[str] = Field(default_factory=lambda: [
+        "Triagem concluída (equipamento, período, local, data identificados)",
+        "Cliente já informou se tem cadastro ou não",
+        "Cliente pede falar com vendedor/humano",
+        "Conversa sem progresso após 2 tentativas",
+    ])
+    team_id: str = "1"
+
+    # Guardrails
+    guardrails: list[str] = Field(default_factory=list)
+
+    # Instrução Final
+    instrucao_final: Optional[str] = None
