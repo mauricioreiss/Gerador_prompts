@@ -1,8 +1,14 @@
+import sys
+import os
+from pathlib import Path
+
+# Garante que o diretório backend está no sys.path (necessário para Vercel)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
-from pathlib import Path
 import io
 
 from schemas import PromptRequest, PromptResponse, RefineRequest, RefineResponse, GoogleFormWebhook, LocadoraPromptRequest
